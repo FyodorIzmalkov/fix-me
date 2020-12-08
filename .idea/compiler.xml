@@ -6,7 +6,10 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="fix-me" />
+        <module name="market" />
+        <module name="core" />
+        <module name="router" />
+        <module name="broker" />
       </profile>
     </annotationProcessing>
   </component>
