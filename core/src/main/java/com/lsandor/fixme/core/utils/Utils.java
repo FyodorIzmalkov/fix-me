@@ -30,4 +30,8 @@ public class Utils {
                 ? args[0]
                 : DateTimeFormatter.ofPattern("mmss").format(LocalDateTime.now());
     }
+
+    public static boolean isParsableToInt(String strToParse) {
+        return strToParse.matches("\\d+");
+    }
 }

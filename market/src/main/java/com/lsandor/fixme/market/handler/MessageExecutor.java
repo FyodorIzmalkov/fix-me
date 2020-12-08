@@ -20,11 +20,11 @@ public class MessageExecutor extends MessageHandlerWithId {
 
     @Override
     public void handle(AsynchronousSocketChannel channel, String message) {
-        final String instrument = Core.getFixValueByTag(message, FIX_tag.INSTRUMENT);
+        final String instrument = Core.getFixValueFromMessageByTag(message, FIX_tag.INSTRUMENT);
         if (instruments.containsKey(instrument)) {
-            final int quantity = Integer.parseInt(Core.getFixValueByTag(message, FIX_tag.QUANTITY));
+            final int quantity = Integer.parseInt(Core.getFixValueFromMessageByTag(message, FIX_tag.QUANTITY));
             final int marketQuantity = instruments.get(instrument);
-            final String type = Core.getFixValueByTag(message, FIX_tag.TYPE);
+            final String type = Core.getFixValueFromMessageByTag(message, FIX_tag.TYPE);
             if (type.equals(MessageType.Buy.toString())) {
                 if (marketQuantity < quantity) {
                     rejectedMessage(channel, message, "Not enough instruments");

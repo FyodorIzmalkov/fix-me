@@ -28,15 +28,15 @@ public abstract class MessageHandlerWithId extends AbstractMessageHandler {
     }
 
     private void sendMessage(AsynchronousSocketChannel clientChannel, String fixMessage, String message, Result result) {
-        final String targetName = Core.getFixValueByTag(fixMessage, FIX_tag.SOURCE_NAME);
+        final String targetName = Core.getFixValueFromMessageByTag(fixMessage, FIX_tag.SOURCE_NAME);
         if (isInsertMessagesToDb()) {
             Database.insert(
                     name,
                     targetName,
-                    Core.getFixValueByTag(fixMessage, FIX_tag.TYPE),
-                    Core.getFixValueByTag(fixMessage, FIX_tag.INSTRUMENT),
-                    Core.getFixValueByTag(fixMessage, FIX_tag.PRICE),
-                    Core.getFixValueByTag(fixMessage, FIX_tag.QUANTITY),
+                    Core.getFixValueFromMessageByTag(fixMessage, FIX_tag.TYPE),
+                    Core.getFixValueFromMessageByTag(fixMessage, FIX_tag.INSTRUMENT),
+                    Core.getFixValueFromMessageByTag(fixMessage, FIX_tag.PRICE),
+                    Core.getFixValueFromMessageByTag(fixMessage, FIX_tag.QUANTITY),
                     result.toString(),
                     message);
             Database.selectAll();

@@ -1,13 +1,17 @@
 package com.lsandor.fixme.core;
 
 
+import com.lsandor.fixme.core.exception.NoFixTagException;
 import com.lsandor.fixme.core.exception.UserInputValidationException;
-import com.lsandor.fixme.core.exception.WrongFixTagException;
 import com.lsandor.fixme.core.tags.FIX_tag;
 import com.lsandor.fixme.core.utils.Constants;
 
-import static com.lsandor.fixme.core.utils.Constants.FIELD_DELIMITER_FOR_SPLIT;
-import static com.lsandor.fixme.core.utils.Constants.tagPatternMap;
+import javax.xml.bind.DatatypeConverter;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+
+import static com.lsandor.fixme.core.tags.FIX_tag.CHECKSUM;
+import static com.lsandor.fixme.core.utils.Constants.*;
 
 public class Core {
 
@@ -24,7 +28,7 @@ public class Core {
         addTag(builder, FIX_tag.INSTRUMENT, m[2]);
         addTag(builder, FIX_tag.QUANTITY, m[3]);
         addTag(builder, FIX_tag.PRICE, m[4]);
-        addTag(builder, FIX_tag.CHECKSUM, calculateChecksum(builder.toString()));
+        addTag(builder, CHECKSUM, calculateChecksumFromString(builder.toString()));
         return builder.toString();
     }
 
@@ -35,7 +39,7 @@ public class Core {
         addTag(builder, FIX_tag.TARGET_NAME, targetName);
         addTag(builder, FIX_tag.RESULT, result.toString());
         addTag(builder, FIX_tag.MESSAGE, message);
-        addTag(builder, FIX_tag.CHECKSUM, calculateChecksum(builder.toString()));
+        addTag(builder, CHECKSUM, calculateChecksumFromString(builder.toString()));
         return builder.toString();
     }
 
@@ -46,21 +50,39 @@ public class Core {
                 .append(Constants.FIELD_DELIMITER);
     }
 
-    public static String calculateChecksum(String message) {
-        final byte[] bytes = message.getBytes();
-        int sum = 0;
-        for (byte aByte : bytes) {
-            sum += aByte;
+//    public static String calculateChecksumFromString(String fixMessage) {
+//        byte[] bytesArr = fixMessage.getBytes();
+//        int sum = 0;
+//        for (byte aByte : bytesArr) {
+//            sum += aByte;
+//        }
+//        return String.format("%03d", sum % 256);
+//    }
+
+    public static String calculateChecksumFromString(String fixMessage) {
+        return getSHA256Hash(fixMessage);
+    }
+
+    private static String getSHA256Hash(String data) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance(SHA_256);
+            byte[] hash = digest.digest(data.getBytes(StandardCharsets.UTF_8));
+            return bytesToHex(hash);
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
-        return String.format("%03d", sum % 256);
+        return "NO_HASH";
     }
 
-    public static String getMessageWithoutChecksum(String fixMessage) {
-        final int checksumIndex = fixMessage.lastIndexOf(FIX_tag.CHECKSUM.getValue() + Constants.TAG_DELIMITER);
-        return fixMessage.substring(0, checksumIndex);
+    private static String bytesToHex(byte[] hash) {
+        return DatatypeConverter.printHexBinary(hash).toUpperCase();
     }
 
-    public static String getFixValueByTag(String fixMessage, FIX_tag tag) {
+    public static String getFixMessageWithoutChecksum(String fixMessage) {
+        return fixMessage.substring(ZERO_INDEX, fixMessage.lastIndexOf(tagPatternMap.get(CHECKSUM)));
+    }
+
+    public static String getFixValueFromMessageByTag(String fixMessage, FIX_tag tag) {
         String[] splitMessage = fixMessage.split(FIELD_DELIMITER_FOR_SPLIT);
         String startPattern = tagPatternMap.get(tag);
         for (String partOfMessage : splitMessage) {
@@ -68,6 +90,7 @@ public class Core {
                 return partOfMessage.substring(startPattern.length());
             }
         }
-        throw new WrongFixTagException("No '" + tag + "' tag in message + '" + fixMessage + "'");
+
+        throw new NoFixTagException("No mandatory tag: " + tag.toString() + " in the message: " + fixMessage);
     }
 }

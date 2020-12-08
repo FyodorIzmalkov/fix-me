@@ -37,7 +37,7 @@
                             </descriptorRefs>
                             <archive>
                                 <manifest>
-                                    <mainClass>com.lsandor.fixme.market.Market</mainClass>
+                                    <mainClass>com.lsandor.fixme.market.Main</mainClass>
                                 </manifest>
                             </archive>
                             <outputDirectory>../bin</outputDirectory>

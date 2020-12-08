@@ -1,9 +1,9 @@
 package com.lsandor.fixme.market.handler;
 
 import com.lsandor.fixme.core.Core;
-import com.lsandor.fixme.core.tags.FIX_tag;
 import com.lsandor.fixme.core.MessageType;
-import com.lsandor.fixme.core.exception.WrongFixTagException;
+import com.lsandor.fixme.core.exception.NoFixTagException;
+import com.lsandor.fixme.core.tags.FIX_tag;
 
 import java.nio.channels.AsynchronousSocketChannel;
 
@@ -16,9 +16,9 @@ public class MarketTagsValidator extends MessageHandlerWithId {
     @Override
     public void handle(AsynchronousSocketChannel channel, String message) {
         try {
-            Core.getFixValueByTag(message, FIX_tag.INSTRUMENT);
-            final int price = Integer.parseInt(Core.getFixValueByTag(message, FIX_tag.PRICE));
-            final int quantity = Integer.parseInt(Core.getFixValueByTag(message, FIX_tag.QUANTITY));
+            Core.getFixValueFromMessageByTag(message, FIX_tag.INSTRUMENT);
+            final int price = Integer.parseInt(Core.getFixValueFromMessageByTag(message, FIX_tag.PRICE));
+            final int quantity = Integer.parseInt(Core.getFixValueFromMessageByTag(message, FIX_tag.QUANTITY));
             if (quantity <= 0 || quantity > 10000) {
                 rejectedMessage(channel, message, "Wrong quantity(1-10k)");
                 return;
@@ -27,13 +27,13 @@ public class MarketTagsValidator extends MessageHandlerWithId {
                 return;
             }
 
-            final String type = Core.getFixValueByTag(message, FIX_tag.TYPE);
+            final String type = Core.getFixValueFromMessageByTag(message, FIX_tag.TYPE);
             if (MessageType.is(type)) {
                 super.handle(channel, message);
             } else {
                 rejectedMessage(channel, message, "Wrong operation type");
             }
-        } catch (WrongFixTagException ex) {
+        } catch (NoFixTagException ex) {
             rejectedMessage(channel, message, "Wrong fix tags");
         } catch (NumberFormatException ex) {
             rejectedMessage(channel, message, "Wrong value type");

@@ -1,30 +1,32 @@
 package com.lsandor.fixme.core.handler.impl;
 
-import com.lsandor.fixme.core.Core;
-import com.lsandor.fixme.core.tags.FIX_tag;
+import com.lsandor.fixme.core.exception.NoFixTagException;
 import com.lsandor.fixme.core.handler.AbstractMessageHandler;
-import com.lsandor.fixme.core.messenger.Messenger;
-import com.lsandor.fixme.core.exception.WrongFixTagException;
 
 import java.nio.channels.AsynchronousSocketChannel;
+
+import static com.lsandor.fixme.core.Core.getFixValueFromMessageByTag;
+import static com.lsandor.fixme.core.messenger.Messenger.sendSystemMessage;
+import static com.lsandor.fixme.core.tags.FIX_tag.*;
+import static com.lsandor.fixme.core.utils.Utils.isParsableToInt;
 
 public class MandatoryTagsValidator extends AbstractMessageHandler {
 
     @Override
     public void handle(AsynchronousSocketChannel channel, String message) {
         try {
-            String sourceId = Core.getFixValueByTag(message, FIX_tag.ID);
-            Core.getFixValueByTag(message, FIX_tag.SOURCE_NAME);
-            Core.getFixValueByTag(message, FIX_tag.TARGET_NAME);
-            String checksum = Core.getFixValueByTag(message, FIX_tag.CHECKSUM);
+            String sourceId = getFixValueFromMessageByTag(message, ID);
+            getFixValueFromMessageByTag(message, SOURCE_NAME);
+            getFixValueFromMessageByTag(message, TARGET_NAME);
+            String checksum = getFixValueFromMessageByTag(message, CHECKSUM);
 
-            Integer.parseInt(sourceId);
-            Integer.parseInt(checksum);
+            if (!isParsableToInt(sourceId) || !isParsableToInt(checksum)) {
+                sendSystemMessage(channel, "SOURCE_ID and CHECKSUM tags values must be numbers: " + message);
+            }
+
             super.handle(channel, message);
-        } catch (WrongFixTagException ex) {
-            Messenger.sendInternalMessage(channel, ex.getMessage());
-        } catch (NumberFormatException ex) {
-            Messenger.sendInternalMessage(channel, "SOURCE_ID, CHECKSUM Tags should be numbers: " + message);
+        } catch (NoFixTagException e) {
+            sendSystemMessage(channel, e.getLocalizedMessage());
         }
     }
 }

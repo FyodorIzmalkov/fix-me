@@ -2,8 +2,8 @@ package com.lsandor.fixme.core.client;
 
 
 import com.lsandor.fixme.core.messenger.Messenger;
-import com.lsandor.fixme.core.handler.impl.ChecksumValidator;
-import com.lsandor.fixme.core.handler.impl.InternalMessageHandler;
+import com.lsandor.fixme.core.handler.impl.MessageChecksumValidator;
+import com.lsandor.fixme.core.handler.impl.SystemMessageHandler;
 import com.lsandor.fixme.core.handler.impl.MandatoryTagsValidator;
 import com.lsandor.fixme.core.handler.MessageHandler;
 import com.lsandor.fixme.core.utils.Constants;
@@ -77,7 +77,7 @@ public abstract class Client {
             @Override
             public void completed(Integer result, Object attachment) {
                 final String message = Messenger.read(result, buffer);
-                if (!Constants.EMPTY_MESSAGE.equals(message)) {
+                if (!Constants.EMPTY_STRING.equals(message)) {
                     onSuccessRead(message);
                     getSocketChannel().read(buffer, null, this);
                 } else {
@@ -103,9 +103,9 @@ public abstract class Client {
     }
 
     protected MessageHandler getMessageHandler() {
-        final MessageHandler messageHandler = new InternalMessageHandler();
+        final MessageHandler messageHandler = new SystemMessageHandler();
         final MessageHandler mandatoryTagsValidator = new MandatoryTagsValidator();
-        final MessageHandler checksumValidator = new ChecksumValidator();
+        final MessageHandler checksumValidator = new MessageChecksumValidator();
         messageHandler.setNextHandler(mandatoryTagsValidator);
         mandatoryTagsValidator.setNextHandler(checksumValidator);
         return messageHandler;

@@ -2,10 +2,10 @@ package com.lsandor.fixme.broker.handler;
 
 
 import com.lsandor.fixme.core.Core;
-import com.lsandor.fixme.core.tags.FIX_tag;
 import com.lsandor.fixme.core.Result;
-import com.lsandor.fixme.core.exception.WrongFixTagException;
+import com.lsandor.fixme.core.exception.NoFixTagException;
 import com.lsandor.fixme.core.handler.AbstractMessageHandler;
+import com.lsandor.fixme.core.tags.FIX_tag;
 
 import java.nio.channels.AsynchronousSocketChannel;
 
@@ -15,8 +15,8 @@ public class ResultTagValidator extends AbstractMessageHandler {
     public void handle(AsynchronousSocketChannel channel, String message) {
         final String result;
         try {
-            result = Core.getFixValueByTag(message, FIX_tag.RESULT);
-        } catch (WrongFixTagException ex) {
+            result = Core.getFixValueFromMessageByTag(message, FIX_tag.RESULT);
+        } catch (NoFixTagException ex) {
             System.out.println(ex.getMessage());
             return;
         }
