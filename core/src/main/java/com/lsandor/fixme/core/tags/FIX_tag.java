@@ -9,7 +9,7 @@ public enum FIX_tag {
     QUANTITY(4),
     PRICE(5),
     TYPE(6),
-    RESULT(8),
+    STATUS(8),
     MESSAGE(9),
     CHECKSUM(10);
 

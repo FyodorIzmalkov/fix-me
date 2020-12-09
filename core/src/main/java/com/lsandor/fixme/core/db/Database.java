@@ -67,7 +67,7 @@ public class Database {
                 final ResultSet rs = stmt.executeQuery(SELECT_QUERY)) {
                 final AsciiTable at = new AsciiTable();
                 at.addRule();
-                at.addRow("id", "Market", "Broker", "Operation", "Instrument", "Quantity", "com.lsandor.fixme.core.Result", "Comment");
+                at.addRow("id", "Market", "Broker", "Operation", "Instrument", "Quantity", "com.lsandor.fixme.core.status.Result", "Comment");
                 while (rs.next()) {
                     at.addRule();
                     at.addRow(rs.getInt("id"),

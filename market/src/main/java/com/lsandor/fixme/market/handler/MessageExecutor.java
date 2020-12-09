@@ -1,19 +1,19 @@
 package com.lsandor.fixme.market.handler;
 
 
-
 import com.lsandor.fixme.core.Core;
+import com.lsandor.fixme.core.messenger.MessageType;
+import com.lsandor.fixme.core.model.Instrument;
 import com.lsandor.fixme.core.tags.FIX_tag;
-import com.lsandor.fixme.core.MessageType;
 
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.Map;
 
-public class MessageExecutor extends MessageHandlerWithId {
+public class MessageExecutor extends BaseMessageHandler {
 
-    private final Map<String, Integer> instruments;
+    private final Map<Instrument, Long> instruments;
 
-    public MessageExecutor(String clientId, String name, Map<String, Integer> instruments) {
+    public MessageExecutor(String clientId, String name, Map<Instrument, Long> instruments) {
         super(clientId, name);
         this.instruments = instruments;
     }
@@ -23,11 +23,11 @@ public class MessageExecutor extends MessageHandlerWithId {
         final String instrument = Core.getFixValueFromMessageByTag(message, FIX_tag.INSTRUMENT);
         if (instruments.containsKey(instrument)) {
             final int quantity = Integer.parseInt(Core.getFixValueFromMessageByTag(message, FIX_tag.QUANTITY));
-            final int marketQuantity = instruments.get(instrument);
+            final long marketQuantity = instruments.get(instrument);
             final String type = Core.getFixValueFromMessageByTag(message, FIX_tag.TYPE);
-            if (type.equals(MessageType.Buy.toString())) {
+            if (type.equals(MessageType.BUY.toString())) {
                 if (marketQuantity < quantity) {
-                    rejectedMessage(channel, message, "Not enough instruments");
+                    responseWithStatusRejected(channel, message, "Not enough instruments");
                     return;
                 } else {
                     instruments.put(instrument, marketQuantity - quantity);
@@ -36,9 +36,9 @@ public class MessageExecutor extends MessageHandlerWithId {
                 instruments.put(instrument, marketQuantity + quantity);
             }
             System.out.println("Market instruments: " + instruments.toString());
-            executedMessage(channel, message, "OK");
+            responseWithStatusExecuted(channel, message, "OK");
         } else {
-            rejectedMessage(channel, message, instrument + " instrument is not traded on the market");
+            responseWithStatusRejected(channel, message, instrument + " instrument is not traded on the market");
         }
     }
 

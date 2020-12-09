@@ -3,12 +3,16 @@ package com.lsandor.fixme.core;
 
 import com.lsandor.fixme.core.exception.NoFixTagException;
 import com.lsandor.fixme.core.exception.UserInputValidationException;
+import com.lsandor.fixme.core.status.Status;
 import com.lsandor.fixme.core.tags.FIX_tag;
 import com.lsandor.fixme.core.utils.Constants;
 
 import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 import static com.lsandor.fixme.core.tags.FIX_tag.CHECKSUM;
 import static com.lsandor.fixme.core.utils.Constants.*;
@@ -32,12 +36,12 @@ public class Core {
         return builder.toString();
     }
 
-    public static String resultFixMessage(String message, String id, String srcName, String targetName, Result result) {
+    public static String resultFixMessage(String message, String id, String srcName, String targetName, Status status) {
         final StringBuilder builder = new StringBuilder();
         addTag(builder, FIX_tag.ID, id);
         addTag(builder, FIX_tag.SOURCE_NAME, srcName);
         addTag(builder, FIX_tag.TARGET_NAME, targetName);
-        addTag(builder, FIX_tag.RESULT, result.toString());
+        addTag(builder, FIX_tag.STATUS, status.toString());
         addTag(builder, FIX_tag.MESSAGE, message);
         addTag(builder, CHECKSUM, calculateChecksumFromString(builder.toString()));
         return builder.toString();
@@ -92,5 +96,20 @@ public class Core {
         }
 
         throw new NoFixTagException("No mandatory tag: " + tag.toString() + " in the message: " + fixMessage);
+    }
+
+    public static Map<FIX_tag, String> getFixMapByTag(String fixMessage) {
+        String[] splitMessage = fixMessage.split(FIELD_DELIMITER_FOR_SPLIT);
+        Set<String> set = reverseTagPatternMap.keySet();
+        Map<FIX_tag, String> result = new HashMap<>();
+        for (String partOfMessage : splitMessage) {
+            for (String startOfTagPattern : set) {
+                if (partOfMessage.startsWith(startOfTagPattern)) {
+                    result.put(reverseTagPatternMap.get(startOfTagPattern), partOfMessage.substring(startOfTagPattern.length()));
+                    break;
+                }
+            }
+        }
+        return result;
     }
 }

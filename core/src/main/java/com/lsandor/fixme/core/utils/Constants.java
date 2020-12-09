@@ -18,6 +18,7 @@ public class Constants {
     public static final String EMPTY_STRING = "";
     public static final String SHA_256 = "SHA-256";
     public static final String MARKET_NAME_PREFIX = "Market_";
+    public static final String ZERO_ID = "000000";
 
     public static final int BROKER_PORT = 5000;
     public static final int MARKET_PORT = 5001;
@@ -26,14 +27,17 @@ public class Constants {
     public static final int DEFAULT_QUEUE_CAPACITY = 500;
     public static final int EXECUTOR_THREADS = 5;
 
-    public static final Map<FIX_tag, String> tagPatternMap = new ConcurrentHashMap<>();
+    public static final Map<FIX_tag, String> tagPatternMap = new ConcurrentHashMap<>();         // fixTag to fixTag.getValue() + TAG_DELIMITER
+    public static final Map<String, FIX_tag> reverseTagPatternMap = new ConcurrentHashMap<>(); // fixTag.getValue() + TAG_DELIMITER to fixTag
 
     static {
         FIX_tag[] fix_tags = FIX_tag.values();
         synchronized (tagPatternMap) {
             for (FIX_tag fixTag : fix_tags) {
                 tagPatternMap.put(fixTag, fixTag.getValue() + TAG_DELIMITER);
+                reverseTagPatternMap.put(fixTag.getValue() + TAG_DELIMITER, fixTag);
             }
         }
+
     }
 }

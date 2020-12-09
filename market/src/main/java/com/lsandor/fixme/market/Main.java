@@ -1,9 +1,10 @@
 package com.lsandor.fixme.market;
 
-import com.lsandor.fixme.core.utils.Utils;
+import static com.lsandor.fixme.core.utils.Utils.getOrGenerateClientName;
 
 public class Main {
     public static void main(String[] args) {
-        new Market(Utils.getClientName(args)).start();
+        Market market = new Market(getOrGenerateClientName(args));
+        market.run();
     }
 }

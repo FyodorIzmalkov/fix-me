@@ -2,28 +2,31 @@ package com.lsandor.fixme.broker.handler;
 
 
 import com.lsandor.fixme.core.Core;
-import com.lsandor.fixme.core.Result;
 import com.lsandor.fixme.core.exception.NoFixTagException;
 import com.lsandor.fixme.core.handler.AbstractMessageHandler;
+import com.lsandor.fixme.core.status.Status;
 import com.lsandor.fixme.core.tags.FIX_tag;
 
 import java.nio.channels.AsynchronousSocketChannel;
+
+import static org.apache.commons.lang3.EnumUtils.isValidEnum;
 
 public class ResultTagValidator extends AbstractMessageHandler {
 
     @Override
     public void handle(AsynchronousSocketChannel channel, String message) {
-        final String result;
+        final String status;
         try {
-            result = Core.getFixValueFromMessageByTag(message, FIX_tag.RESULT);
+            status = Core.getFixValueFromMessageByTag(message, FIX_tag.STATUS);
         } catch (NoFixTagException ex) {
             System.out.println(ex.getMessage());
             return;
         }
-        if (Result.is(result)) {
+
+        if (isValidEnum(Status.class, status)) {
             super.handle(channel, message);
         } else {
-            System.out.println("Wrong result type in message: " + message);
+            System.out.println("Wrong status type in message: " + message);
         }
     }
 }
