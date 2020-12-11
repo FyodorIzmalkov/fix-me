@@ -42,6 +42,7 @@ public class MessageSender extends AbstractMessageHandler {
             super.handle(channel, message);
         } else {
             Messenger.sendSystemMessage(channel, "No client found with name: " + targetName + ", we will try to resend message later.");
+            log.info("Current routingMap: {}", routingMap.toString());
             failedMessages.computeIfAbsent(targetName, (key) -> new HashSet<>()).add(message);
         }
     }

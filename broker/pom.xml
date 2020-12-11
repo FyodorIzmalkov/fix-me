@@ -39,7 +39,7 @@
                             </descriptorRefs>
                             <archive>
                                 <manifest>
-                                    <mainClass>com.lsandor.fixme.broker.Broker</mainClass>
+                                    <mainClass>com.lsandor.fixme.broker.Main</mainClass>
                                 </manifest>
                             </archive>
                             <outputDirectory>../bin</outputDirectory>

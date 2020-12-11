@@ -18,7 +18,7 @@ import static com.lsandor.fixme.core.tags.FIX_tag.CHECKSUM;
 import static com.lsandor.fixme.core.utils.Constants.*;
 
 public class Core {
-
+    //TODO
     public static String userInputToFixMessage(String input, String id, String name) throws UserInputValidationException {
         final String[] m = input.split(Constants.USER_INPUT_DELIMITER);
         if (m.length != 5) {
@@ -53,15 +53,6 @@ public class Core {
                 .append(value)
                 .append(Constants.FIELD_DELIMITER);
     }
-
-//    public static String calculateChecksumFromString(String fixMessage) {
-//        byte[] bytesArr = fixMessage.getBytes();
-//        int sum = 0;
-//        for (byte aByte : bytesArr) {
-//            sum += aByte;
-//        }
-//        return String.format("%03d", sum % 256);
-//    }
 
     public static String calculateChecksumFromString(String fixMessage) {
         return getSHA256Hash(fixMessage);

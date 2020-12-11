@@ -15,9 +15,11 @@ public class Constants {
     public static final String FIELD_DELIMITER = "|";
     public static final String FIELD_DELIMITER_FOR_SPLIT = Pattern.quote(Constants.FIELD_DELIMITER);
     public static final String SYSTEM_MESSAGE = "SYSTEM_MESSAGE:";
+    public static final String EXAMPLE_MESSAGE_FOR_BROKER = "Market_No04648 BUY EUR_USD 10 10";
     public static final String EMPTY_STRING = "";
     public static final String SHA_256 = "SHA-256";
     public static final String MARKET_NAME_PREFIX = "Market_";
+    public static final String BROKER_NAME_PREFIX = "Broker_";
     public static final String ZERO_ID = "000000";
 
     public static final int BROKER_PORT = 5000;

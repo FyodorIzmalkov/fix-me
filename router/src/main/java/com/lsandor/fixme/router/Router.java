@@ -25,6 +25,7 @@ public class Router {
 
     private static final long DELAY_BETWEEN_RESENDING_MESSAGES = 10L;
     private final Map<String, AsynchronousSocketChannel> routingMap = new ConcurrentHashMap<>();
+    private final Map<String, Integer> mapOfFailedTargetConnections = new ConcurrentHashMap<>();
     private final Map<String, Set<String>> failedMessages = new ConcurrentHashMap<>();
     private final AtomicInteger id = new AtomicInteger(1);
     private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
@@ -39,10 +40,6 @@ public class Router {
         AsynchronousServerSocketChannel brokerListener = createAsynchronousServerSocketChannel(BROKER_PORT, messageHandler);
         AsynchronousServerSocketChannel marketsListener = createAsynchronousServerSocketChannel(MARKET_PORT, messageHandler);
         executorService.scheduleAtFixedRate(this::sendFailedMessages, 0L, DELAY_BETWEEN_RESENDING_MESSAGES, TimeUnit.SECONDS);
-
-        while (true) {
-            // работаем пока не вырубят)
-        }
     }
 
     private AsynchronousServerSocketChannel createAsynchronousServerSocketChannel(int port, MessageHandler messageHandler) {
@@ -64,14 +61,25 @@ public class Router {
             return;
         }
 
-        log.info("Sending failed messages.");
+        log.info("Trying to send failed messages.");
         failedMessages.keySet().removeIf(nameOfTarget -> {
             AsynchronousSocketChannel channel = routingMap.get(nameOfTarget);
             if (channel != null) {
                 log.info("Sending message to {}", nameOfTarget);
                 Set<String> messagesSet = failedMessages.get(nameOfTarget);
                 messagesSet.forEach(msg -> sendMessage(channel, msg));
+                mapOfFailedTargetConnections.remove(nameOfTarget);
                 return true;
+            }
+
+            mapOfFailedTargetConnections.computeIfPresent(nameOfTarget, (k, oldVal) -> ++oldVal);
+            mapOfFailedTargetConnections.computeIfAbsent(nameOfTarget, (k) -> 1);
+
+            if (mapOfFailedTargetConnections.get(nameOfTarget) == 5) {
+                mapOfFailedTargetConnections.remove(nameOfTarget);
+                failedMessages.remove(nameOfTarget);
+                log.info("{} removed from routing map after 5 connection attempts", nameOfTarget);
+                log.info(routingMap.toString());
             }
             return false;
         });

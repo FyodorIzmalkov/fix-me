@@ -1,41 +1,46 @@
 package com.lsandor.fixme.broker;
 
 
-import com.lsandor.fixme.broker.handler.ExecutionResult;
-import com.lsandor.fixme.broker.handler.ResultTagValidator;
+import com.lsandor.fixme.broker.handler.StatusValidator;
+import com.lsandor.fixme.broker.handler.TransactionResult;
 import com.lsandor.fixme.core.client.Counterparty;
-import com.lsandor.fixme.core.Core;
-import com.lsandor.fixme.core.messenger.Messenger;
-import com.lsandor.fixme.core.utils.Utils;
 import com.lsandor.fixme.core.exception.UserInputValidationException;
 import com.lsandor.fixme.core.handler.MessageHandler;
-import com.lsandor.fixme.core.utils.Constants;
+import com.lsandor.fixme.core.model.Instrument;
+import lombok.extern.slf4j.Slf4j;
 
+import java.util.Map;
 import java.util.Scanner;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
+import static com.lsandor.fixme.core.Core.userInputToFixMessage;
+import static com.lsandor.fixme.core.messenger.Messenger.sendMessage;
+import static com.lsandor.fixme.core.utils.Constants.*;
+
+@Slf4j
 public class Broker extends Counterparty {
 
-    public static final String NAME_PREFIX = "B";
+    private final Scanner scanner = new Scanner(System.in);
+    private final Map<Instrument, Long> instrumentMap = new ConcurrentHashMap<>();
 
-    private Broker(String name) {
-        super(Constants.BROKER_PORT, NAME_PREFIX + name);
+    public Broker(String name) {
+        super(BROKER_PORT, BROKER_NAME_PREFIX + name);
     }
 
-    private void start() {
+    public void run() {
+        log.info("Broker started, name: {}", this.getName());
         try {
-//            readFromSocket();
+            initConnectionWithRouter();
+            readFromSocket(createCompletionHandler());
 
-            final Scanner scanner = new Scanner(System.in);
-            System.out.println("Message to send " + Constants.USER_MESSAGE_FORMAT + ":");
+            log.info("Type message to send, example: {}", EXAMPLE_MESSAGE_FOR_BROKER);
             while (true) {
                 try {
-                    final String message = Core.userInputToFixMessage(scanner.nextLine(), getId(), getName());
-                    final Future<Integer> result = Messenger.sendMessage(getChannel(), message);
-                    result.get();
+                    String fixMessageToSend = userInputToFixMessage(scanner.nextLine(), getId(), getName()); // TODO
+                    sendMessage(getChannel(), fixMessageToSend).get();
                 } catch (UserInputValidationException e) {
-                    System.out.println(e.getMessage());
+                    System.out.println(e.getMessage()); // TODO
                 }
             }
         } catch (InterruptedException | ExecutionException e) {
@@ -43,18 +48,14 @@ public class Broker extends Counterparty {
         }
     }
 
+    @Override
+    protected MessageHandler createMessageHandler() {
+        MessageHandler messageHandler = super.createMessageHandler();
+        MessageHandler resultTag = new StatusValidator();
+        MessageHandler executionResult = new TransactionResult(instrumentMap);
 
-    protected MessageHandler createCommonMessageHandler() {
-//        final MessageHandler messageHandler = super.createCommonMessageHandler();
-        final MessageHandler resultTag = new ResultTagValidator();
-        final MessageHandler executionResult = new ExecutionResult();
-//        messageHandler.setNextHandler(resultTag);
+        messageHandler.setNextHandler(resultTag);
         resultTag.setNextHandler(executionResult);
-//        return messageHandler;
-        return null;
-    }
-
-    public static void main(String[] args) {
-        new Broker(Utils.getOrGenerateClientName(args)).start();
+        return messageHandler;
     }
 }

@@ -32,7 +32,7 @@ public abstract class BaseMessageHandler extends AbstractMessageHandler {
         Map<FIX_tag, String> fixValueMap = getFixMapByTag(fixMessage);
 //        String targetName = Core.getFixValueFromMessageByTag(fixMessage, SOURCE_NAME); //TODO COULD BE ERROR
         String targetName = fixValueMap.get(SOURCE_NAME); //TODO COULD BE ERROR
-        if (isInsertMessagesToDb()) {
+        if (saveTransactionToDatabase()) {
             Database.insert(
                     name,
                     targetName,
@@ -47,7 +47,7 @@ public abstract class BaseMessageHandler extends AbstractMessageHandler {
         Messenger.sendMessage(clientChannel, Core.resultFixMessage(message, id, name, targetName, status));
     }
 
-    protected boolean isInsertMessagesToDb() {
+    protected boolean saveTransactionToDatabase() {
         return false;
     }
 }

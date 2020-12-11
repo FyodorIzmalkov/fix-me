@@ -1,6 +1,8 @@
 package com.lsandor.fixme.core.client;
 
 
+import com.lsandor.fixme.core.completion.handler.CommonCompletionHandler;
+import com.lsandor.fixme.core.handler.MessageHandler;
 import com.lsandor.fixme.core.messenger.Messenger;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static com.lsandor.fixme.core.utils.Constants.*;
+import static com.lsandor.fixme.core.utils.Utils.createCommonMessageHandler;
 
 @Slf4j
 public abstract class Counterparty {
@@ -39,7 +42,7 @@ public abstract class Counterparty {
     }
 
     protected AsynchronousSocketChannel getChannel() {
-        if (this.channel == null) {
+        if (this.channel == null || !this.channel.isOpen()) {
             this.channel = tryToConnectToRouter();
             establishConnectionAndReceiveId();
             return channel;
@@ -79,5 +82,25 @@ public abstract class Counterparty {
 
     protected void readFromSocket(CompletionHandler<Integer, Object> completionHandler) {
         getChannel().read(byteBuffer, null, completionHandler);
+    }
+
+    protected void initConnectionWithRouter() {
+        if (this.channel == null) {
+            this.channel = tryToConnectToRouter();
+            establishConnectionAndReceiveId();
+        }
+    }
+
+    protected CommonCompletionHandler createCompletionHandler() {
+        return new CommonCompletionHandler(
+                this.byteBuffer,
+                createMessageHandler(),
+                this::getChannel,
+                this::setChannel
+        );
+    }
+
+    protected MessageHandler createMessageHandler() {
+        return createCommonMessageHandler();
     }
 }
