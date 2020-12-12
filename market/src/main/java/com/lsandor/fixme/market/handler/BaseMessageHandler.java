@@ -1,6 +1,6 @@
 package com.lsandor.fixme.market.handler;
 
-import com.lsandor.fixme.core.db.Database;
+import com.lsandor.fixme.core.database.Database;
 import com.lsandor.fixme.core.handler.AbstractMessageHandler;
 import com.lsandor.fixme.core.status.Status;
 import com.lsandor.fixme.core.tags.FIX_tag;
@@ -29,11 +29,13 @@ public abstract class BaseMessageHandler extends AbstractMessageHandler {
 
     private void sendMessageWithStatus(AsynchronousSocketChannel clientChannel, String fixMessage, String message, Status status) {
         Map<FIX_tag, String> fixValueMap = getFixMapByTag(fixMessage);
-        String targetid = fixValueMap.get(SOURCE_ID); //TODO COULD BE ERROR
+        String targetid = fixValueMap.get(SOURCE_ID);
+        String targetName = fixValueMap.get(SOURCE_NAME);
         if (saveTransactionToDatabase()) {
             Database.insert(
                     name,
                     targetid,
+                    targetName,
                     fixValueMap.get(TYPE),
                     fixValueMap.get(INSTRUMENT),
                     fixValueMap.get(PRICE),
@@ -42,18 +44,19 @@ public abstract class BaseMessageHandler extends AbstractMessageHandler {
                     message);
             Database.selectAll();
         }
-        sendMessage(clientChannel, resultFixMessage(message, id, name, targetid, status));
+        sendMessage(clientChannel, resultFixMessage(message, targetid, targetName, status));
     }
 
     protected boolean saveTransactionToDatabase() {
         return false;
     }
 
-    private String resultFixMessage(String message, String id, String sourceName, String targetName, Status status) {
+    private String resultFixMessage(String message, String targetId, String targetName, Status status) {
         StringBuilder builder = new StringBuilder();
         addPart(builder, SOURCE_ID, id);
-        addPart(builder, SOURCE_NAME, sourceName);
-        addPart(builder, TARGET_ID, targetName);
+        addPart(builder, SOURCE_NAME, name);
+        addPart(builder, TARGET_ID, targetId);
+        addPart(builder, TARGET_NAME, targetName);
         addPart(builder, STATUS, status.name());
         addPart(builder, MESSAGE, message);
         addPart(builder, CHECKSUM, calculateChecksumFromString(builder.toString()));

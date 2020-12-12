@@ -33,7 +33,7 @@ public class MessageExecutor extends BaseMessageHandler {
             MessageType messageType = MessageType.valueOf(messageMap.get(TYPE));
             if (MessageType.BUY == messageType) {
                 if (availableQuantity < quantity) {
-                    responseWithStatusRejected(channel, fixMessage, "Not enough quantity of instrument: " + instrument.name());
+                    responseWithStatusRejected(channel, fixMessage, "There is not enough quantity of the following instrument on the market: " + instrument.name());
                     return;
                 } else {
                     log.info("We have a BUY transaction for " + instrument.name() + " quantity: " + quantity);

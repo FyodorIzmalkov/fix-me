@@ -47,7 +47,7 @@ public class MarketMandatoryTagsValidator extends BaseMessageHandler {
         }
 
         String quantityStr = resultMap.get(QUANTITY);
-        if (isEmpty(priceStr)) {
+        if (isEmpty(quantityStr)) {
             responseWithStatusRejected(channel, fixMessage, "Quantity is a mandatory field to fill");
             isMessageValid = false;
         }
@@ -76,7 +76,7 @@ public class MarketMandatoryTagsValidator extends BaseMessageHandler {
                 isMessageValid = false;
             }
         } catch (NumberFormatException e) {
-            responseWithStatusRejected(channel, fixMessage, "Wrong value format");
+            responseWithStatusRejected(channel, fixMessage, "Wrong integer value format");
             return false;
         }
         return isMessageValid;
