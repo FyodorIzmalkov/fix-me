@@ -2,45 +2,46 @@ package com.lsandor.fixme.broker;
 
 
 import com.lsandor.fixme.broker.handler.StatusValidator;
-import com.lsandor.fixme.broker.handler.TransactionResult;
 import com.lsandor.fixme.core.client.Counterparty;
-import com.lsandor.fixme.core.exception.UserInputValidationException;
+import com.lsandor.fixme.core.exception.BadUserInputException;
 import com.lsandor.fixme.core.handler.MessageHandler;
-import com.lsandor.fixme.core.model.Instrument;
+import com.lsandor.fixme.core.handler.impl.MandatoryTagsValidator;
+import com.lsandor.fixme.core.handler.impl.MessageChecksumValidator;
+import com.lsandor.fixme.core.handler.impl.SystemMessageHandler;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Map;
 import java.util.Scanner;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
-import static com.lsandor.fixme.core.Core.userInputToFixMessage;
+import static com.lsandor.fixme.core.Core.addPart;
+import static com.lsandor.fixme.core.Core.calculateChecksumFromString;
 import static com.lsandor.fixme.core.messenger.Messenger.sendMessage;
+import static com.lsandor.fixme.core.tags.FIX_tag.*;
 import static com.lsandor.fixme.core.utils.Constants.*;
+import static org.apache.commons.lang3.StringUtils.SPACE;
 
 @Slf4j
 public class Broker extends Counterparty {
 
     private final Scanner scanner = new Scanner(System.in);
-    private final Map<Instrument, Long> instrumentMap = new ConcurrentHashMap<>();
 
     public Broker(String name) {
         super(BROKER_PORT, BROKER_NAME_PREFIX + name);
     }
 
+    @Override
     public void run() {
         log.info("Broker started, name: {}", this.getName());
         try {
-            initConnectionWithRouter();
-            readFromSocket(createCompletionHandler());
+            super.run();
 
-            log.info("Type message to send, example: {}", EXAMPLE_MESSAGE_FOR_BROKER);
+            log.info("Type a message to send, example: {}", EXAMPLE_MESSAGE_FOR_BROKER);
             while (true) {
                 try {
-                    String fixMessageToSend = userInputToFixMessage(scanner.nextLine(), getId(), getName()); // TODO
-                    sendMessage(getChannel(), fixMessageToSend).get();
-                } catch (UserInputValidationException e) {
-                    System.out.println(e.getMessage()); // TODO
+                    String userInputFixMessage = createFixMessageFromUserInput(scanner.nextLine(), getId(), getName());
+                    sendMessage(getChannel(), userInputFixMessage).get();
+                } catch (BadUserInputException e) {
+                    log.error(e.getLocalizedMessage());
                 }
             }
         } catch (InterruptedException | ExecutionException e) {
@@ -50,12 +51,34 @@ public class Broker extends Counterparty {
 
     @Override
     protected MessageHandler createMessageHandler() {
-        MessageHandler messageHandler = super.createMessageHandler();
+        MessageHandler messageHandler = new SystemMessageHandler();
+        MessageHandler mandatoryTagsValidator = new MandatoryTagsValidator();
+        MessageHandler checksumValidator = new MessageChecksumValidator();
         MessageHandler resultTag = new StatusValidator();
-        MessageHandler executionResult = new TransactionResult(instrumentMap);
 
-        messageHandler.setNextHandler(resultTag);
-        resultTag.setNextHandler(executionResult);
+        messageHandler.setNextHandler(mandatoryTagsValidator);
+        mandatoryTagsValidator.setNextHandler(checksumValidator);
+        checksumValidator.setNextHandler(resultTag);
         return messageHandler;
+    }
+
+    private String createFixMessageFromUserInput(String userInputString, String brokerId, String brokerName) throws BadUserInputException {
+        String[] inputArray = userInputString.split(SPACE);
+        if (inputArray.length != 6) {
+            throw new BadUserInputException("Bad input, input should be formatted this way: " + USER_INPUT_FORMAT);
+        }
+
+        StringBuilder resultBuilder = new StringBuilder();
+        addPart(resultBuilder, SOURCE_ID, brokerId);
+        addPart(resultBuilder, SOURCE_NAME, brokerName);
+        addPart(resultBuilder, TARGET_ID, inputArray[TARGET_ID_NUM]);
+        addPart(resultBuilder, TARGET_NAME, inputArray[TARGET_NAME_NUM]);
+        addPart(resultBuilder, TYPE, inputArray[TYPE_NUM]);
+        addPart(resultBuilder, INSTRUMENT, inputArray[INSTRUMENT_NUM]);
+        addPart(resultBuilder, QUANTITY, inputArray[QUANTITY_NUM]);
+        addPart(resultBuilder, PRICE, inputArray[PRICE_NUM]);
+        addPart(resultBuilder, CHECKSUM, calculateChecksumFromString(resultBuilder.toString()));
+
+        return resultBuilder.toString();
     }
 }

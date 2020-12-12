@@ -42,14 +42,4 @@ public class Utils {
     public static boolean isParsableToInt(String strToParse) {
         return strToParse.matches("\\d+");
     }
-
-    public static MessageHandler createCommonMessageHandler() {
-        MessageHandler messageHandler = new SystemMessageHandler();
-        MessageHandler mandatoryTagsValidator = new MandatoryTagsValidator();
-        MessageHandler checksumValidator = new MessageChecksumValidator();
-
-        messageHandler.setNextHandler(mandatoryTagsValidator);
-        mandatoryTagsValidator.setNextHandler(checksumValidator);
-        return messageHandler;
-    }
 }

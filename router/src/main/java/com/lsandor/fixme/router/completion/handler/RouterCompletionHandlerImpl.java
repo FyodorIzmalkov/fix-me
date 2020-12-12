@@ -1,6 +1,7 @@
 package com.lsandor.fixme.router.completion.handler;
 
 import com.lsandor.fixme.core.handler.MessageHandler;
+import com.lsandor.fixme.router.map.RouterMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -8,7 +9,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -23,21 +23,21 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
 public class RouterCompletionHandlerImpl implements CompletionHandler<AsynchronousSocketChannel, Object> {
 
     private final ExecutorService executorService = Executors.newFixedThreadPool(EXECUTOR_THREADS);
+    private final RouterMap routerMap;
     private final AsynchronousServerSocketChannel clientListener;
-    private final Map<String, AsynchronousSocketChannel> routingMap;
     private final AtomicInteger atomicId;
     private final MessageHandler messageHandler;
-
-    private String clientName = "default_client"; //TODO PROBABLY DO SMTH WITH IT
+    private String clientId = ZERO_ID;
 
     @Override
     public void completed(AsynchronousSocketChannel channel, Object attachment) {
         clientListener.accept(null, this);
         ByteBuffer byteBuffer = ByteBuffer.allocate(DEFAULT_BUFFER_SIZE);
 
-        clientName = readMessage(channel, byteBuffer);
-        responseWithIdForClient(channel, String.format(FORMAT_FOR_ID, atomicId.getAndIncrement()), clientName);
-        updateAndPrintRoutingMap(clientName, channel);
+        String clientName = readMessage(channel, byteBuffer);
+        clientId = String.format(FORMAT_FOR_ID, atomicId.getAndIncrement());
+        sendResponseWithIdForClient(channel, clientId, clientName);
+        updateAndPrintRoutingMap(clientId, clientName, channel);
 
         while (true) {
             String message = readMessage(channel, byteBuffer);
@@ -54,24 +54,23 @@ public class RouterCompletionHandlerImpl implements CompletionHandler<Asynchrono
         closeConnection();
     }
 
-    private void responseWithIdForClient(AsynchronousSocketChannel channel, String currentId, String clientName) {
+    private void sendResponseWithIdForClient(AsynchronousSocketChannel channel, String currentId, String clientName) {
         log.info("{} connected, received ID: {} ", clientName, currentId);
         sendMessage(channel, currentId);
     }
 
     private void closeConnection() {
-        log.info("Closed connection with {}", clientName);
-        routingMap.remove(clientName);
+        log.info("Closed connection with {}", clientId);
+        routerMap.removeChannelByClientId(clientId);
         printRoutingMap();
     }
 
-    private void updateAndPrintRoutingMap(String clientName, AsynchronousSocketChannel channel) {
-        routingMap.put(clientName, channel);
+    private void updateAndPrintRoutingMap(String clientId, String clientName, AsynchronousSocketChannel channel) {
+        routerMap.putClientNameAndIdWithChannel(clientId, clientName, channel);
         printRoutingMap();
     }
 
     private void printRoutingMap() {
-        System.out.println("Routing map: ");
-        System.out.println(routingMap.keySet().toString());
+        System.out.println(routerMap.toString());
     }
 }

@@ -20,7 +20,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static com.lsandor.fixme.core.utils.Constants.*;
-import static com.lsandor.fixme.core.utils.Utils.createCommonMessageHandler;
 
 @Slf4j
 public abstract class Counterparty {
@@ -31,7 +30,7 @@ public abstract class Counterparty {
     private final String name;
 
     @Setter
-    private AsynchronousSocketChannel channel = null;
+    protected AsynchronousSocketChannel channel = null;
     @Getter
     private String id;
 
@@ -41,9 +40,14 @@ public abstract class Counterparty {
         this.id = ZERO_ID;
     }
 
+    protected void run() {
+        initConnectionWithRouter();
+        readFromSocket(createCompletionHandler());
+    }
+
     protected AsynchronousSocketChannel getChannel() {
         if (this.channel == null || !this.channel.isOpen()) {
-            this.channel = tryToConnectToRouter();
+            this.channel = tryToConnectToTheRouter();
             establishConnectionAndReceiveId();
             return channel;
         }
@@ -51,7 +55,7 @@ public abstract class Counterparty {
     }
 
     @NotNull
-    private AsynchronousSocketChannel tryToConnectToRouter() {
+    private AsynchronousSocketChannel tryToConnectToTheRouter() {
         while (true) {
             AsynchronousSocketChannel channel = null;
             try {
@@ -86,7 +90,7 @@ public abstract class Counterparty {
 
     protected void initConnectionWithRouter() {
         if (this.channel == null) {
-            this.channel = tryToConnectToRouter();
+            this.channel = tryToConnectToTheRouter();
             establishConnectionAndReceiveId();
         }
     }
@@ -100,7 +104,5 @@ public abstract class Counterparty {
         );
     }
 
-    protected MessageHandler createMessageHandler() {
-        return createCommonMessageHandler();
-    }
+    protected abstract MessageHandler createMessageHandler();
 }

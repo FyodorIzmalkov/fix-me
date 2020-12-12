@@ -1,9 +1,13 @@
 package com.lsandor.fixme.router;
 
 import com.lsandor.fixme.core.handler.MessageHandler;
+import com.lsandor.fixme.core.handler.impl.MandatoryTagsValidator;
+import com.lsandor.fixme.core.handler.impl.MessageChecksumValidator;
+import com.lsandor.fixme.core.handler.impl.SystemMessageHandler;
 import com.lsandor.fixme.core.model.MessageToSend;
 import com.lsandor.fixme.router.completion.handler.RouterCompletionHandlerImpl;
-import com.lsandor.fixme.router.handler.MessageSender;
+import com.lsandor.fixme.router.handler.MessageRouter;
+import com.lsandor.fixme.router.map.RouterMap;
 import com.lsandor.fixme.router.processor.MessagesQueueProcessor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,14 +22,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.lsandor.fixme.core.messenger.Messenger.sendMessage;
 import static com.lsandor.fixme.core.utils.Constants.*;
-import static com.lsandor.fixme.core.utils.Utils.createCommonMessageHandler;
 
 @Slf4j
 public class Router {
 
     private static final long DELAY_BETWEEN_RESENDING_MESSAGES = 10L;
-    private final Map<String, AsynchronousSocketChannel> routingMap = new ConcurrentHashMap<>();
-    private final Map<String, Integer> mapOfFailedTargetConnections = new ConcurrentHashMap<>();
+    private final RouterMap routerMap = new RouterMap();
     private final Map<String, Set<String>> failedMessages = new ConcurrentHashMap<>();
     private final AtomicInteger id = new AtomicInteger(1);
     private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
@@ -34,26 +36,22 @@ public class Router {
     public void runServer() {
         log.info("Router started");
 
-        MessageHandler messageHandler = createMessageHandler();
         MessagesQueueProcessor messagesQueueProcessor = new MessagesQueueProcessor(messagesQueue);
         messagesQueueProcessor.startSendingMessages();
-        AsynchronousServerSocketChannel brokerListener = createAsynchronousServerSocketChannel(BROKER_PORT, messageHandler);
-        AsynchronousServerSocketChannel marketsListener = createAsynchronousServerSocketChannel(MARKET_PORT, messageHandler);
+        createAsynchronousServerSocketChannel(BROKER_PORT, createMessageHandler());
+        createAsynchronousServerSocketChannel(MARKET_PORT, createMessageHandler());
         executorService.scheduleAtFixedRate(this::sendFailedMessages, 0L, DELAY_BETWEEN_RESENDING_MESSAGES, TimeUnit.SECONDS);
     }
 
-    private AsynchronousServerSocketChannel createAsynchronousServerSocketChannel(int port, MessageHandler messageHandler) {
-        AsynchronousServerSocketChannel serverListener = null;
+    private void createAsynchronousServerSocketChannel(int port, MessageHandler messageHandler) {
         try {
-            serverListener = AsynchronousServerSocketChannel
+            AsynchronousServerSocketChannel serverListener = AsynchronousServerSocketChannel
                     .open()
                     .bind(new InetSocketAddress(LOCALHOST, port));
-            serverListener.accept(null, new RouterCompletionHandlerImpl(serverListener, routingMap, id, messageHandler));
+            serverListener.accept(null, new RouterCompletionHandlerImpl(routerMap, serverListener, id, messageHandler));
         } catch (IOException e) {
             log.error("Could not open the socket: {}", e.getLocalizedMessage());
         }
-
-        return serverListener;
     }
 
     private void sendFailedMessages() {
@@ -62,35 +60,27 @@ public class Router {
         }
 
         log.info("Trying to send failed messages.");
-        failedMessages.keySet().removeIf(nameOfTarget -> {
-            AsynchronousSocketChannel channel = routingMap.get(nameOfTarget);
-            if (channel != null) {
-                log.info("Sending message to {}", nameOfTarget);
-                Set<String> messagesSet = failedMessages.get(nameOfTarget);
+        failedMessages.keySet().removeIf(targetName -> {
+            AsynchronousSocketChannel channel = routerMap.tryToGetChannel(targetName);
+            if (channel != null && channel.isOpen()) {
+                log.info("Sending message to {}", targetName);
+                Set<String> messagesSet = failedMessages.get(targetName);
                 messagesSet.forEach(msg -> sendMessage(channel, msg));
-                mapOfFailedTargetConnections.remove(nameOfTarget);
                 return true;
-            }
-
-            mapOfFailedTargetConnections.computeIfPresent(nameOfTarget, (k, oldVal) -> ++oldVal);
-            mapOfFailedTargetConnections.computeIfAbsent(nameOfTarget, (k) -> 1);
-
-            if (mapOfFailedTargetConnections.get(nameOfTarget) == 5) {
-                mapOfFailedTargetConnections.remove(nameOfTarget);
-                failedMessages.remove(nameOfTarget);
-                log.info("{} removed from routing map after 5 connection attempts", nameOfTarget);
-                log.info(routingMap.toString());
             }
             return false;
         });
-
     }
 
     private MessageHandler createMessageHandler() {
-        MessageHandler messageHandler = createCommonMessageHandler();
-        MessageHandler messageSender = new MessageSender(routingMap, failedMessages, messagesQueue);
+        MessageHandler messageHandler = new SystemMessageHandler();
+        MessageHandler mandatoryTagsValidator = new MandatoryTagsValidator();
+        MessageHandler checksumValidator = new MessageChecksumValidator();
+        MessageHandler messageSender = new MessageRouter(routerMap, failedMessages, messagesQueue);
 
-        messageHandler.setNextHandler(messageSender);
+        messageHandler.setNextHandler(mandatoryTagsValidator);
+        mandatoryTagsValidator.setNextHandler(checksumValidator);
+        checksumValidator.setNextHandler(messageSender);
         return messageHandler;
     }
 }

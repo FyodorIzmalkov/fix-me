@@ -2,13 +2,14 @@ package com.lsandor.fixme.core.tags;
 
 public enum FIX_tag {
 
-    ID(0),
+    SOURCE_ID(0),
     SOURCE_NAME(1),
-    TARGET_NAME(2),
-    INSTRUMENT(3),
-    QUANTITY(4),
-    PRICE(5),
-    TYPE(6),
+    TARGET_ID(2),
+    TARGET_NAME(3),
+    INSTRUMENT(4),
+    QUANTITY(5),
+    PRICE(6),
+    TYPE(7),
     STATUS(8),
     MESSAGE(9),
     CHECKSUM(10);

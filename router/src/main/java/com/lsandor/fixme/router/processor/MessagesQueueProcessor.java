@@ -23,11 +23,13 @@ public class MessagesQueueProcessor {
     }
 
     private void doJob() {
-        try {
-            MessageToSend messageToSend = messagesQueue.take();
-            sendMessage(messageToSend.getChannel(), messageToSend.getMessage());
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        while (true) {
+            try {
+                MessageToSend messageToSend = messagesQueue.take();
+                sendMessage(messageToSend.getChannel(), messageToSend.getMessage());
+            } catch (InterruptedException e) {
+                log.error(e.getLocalizedMessage());
+            }
         }
     }
 

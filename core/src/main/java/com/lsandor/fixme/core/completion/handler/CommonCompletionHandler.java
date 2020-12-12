@@ -25,7 +25,6 @@ public class CommonCompletionHandler implements CompletionHandler<Integer, Objec
     @Override
     public void completed(Integer result, Object attachment) {
         String receivedMessage = Messenger.read(result, byteBuffer);
-        log.info("RECEIVED MESSAGE: {}", receivedMessage);
         if (isNotEmpty(receivedMessage)) {
             messageHandler.handle(channelSupplier.get(), receivedMessage);
             channelSupplier.get().read(byteBuffer, null, this);

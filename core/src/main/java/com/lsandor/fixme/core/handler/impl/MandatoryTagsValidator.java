@@ -15,13 +15,13 @@ public class MandatoryTagsValidator extends AbstractMessageHandler {
     @Override
     public void handle(AsynchronousSocketChannel channel, String message) {
         try {
-            String sourceId = getFixValueFromMessageByTag(message, ID);
+            String sourceId = getFixValueFromMessageByTag(message, SOURCE_ID);
             getFixValueFromMessageByTag(message, SOURCE_NAME);
-            getFixValueFromMessageByTag(message, TARGET_NAME);
-            String checksum = getFixValueFromMessageByTag(message, CHECKSUM);
+            getFixValueFromMessageByTag(message, TARGET_ID);
+//            String checksum = getFixValueFromMessageByTag(message, CHECKSUM); // TODO
 
-            if (!isParsableToInt(sourceId) || !isParsableToInt(checksum)) {
-                sendSystemMessage(channel, "SOURCE_ID and CHECKSUM tags values must be numbers: " + message);
+            if (!isParsableToInt(sourceId)) {
+                sendSystemMessage(channel, "SOURCE_ID tag value must be number: " + message);
             }
 
             super.handle(channel, message);

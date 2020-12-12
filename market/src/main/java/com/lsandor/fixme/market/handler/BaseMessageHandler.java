@@ -1,9 +1,7 @@
 package com.lsandor.fixme.market.handler;
 
-import com.lsandor.fixme.core.Core;
 import com.lsandor.fixme.core.db.Database;
 import com.lsandor.fixme.core.handler.AbstractMessageHandler;
-import com.lsandor.fixme.core.messenger.Messenger;
 import com.lsandor.fixme.core.status.Status;
 import com.lsandor.fixme.core.tags.FIX_tag;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +9,8 @@ import lombok.RequiredArgsConstructor;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.Map;
 
-import static com.lsandor.fixme.core.Core.getFixMapByTag;
+import static com.lsandor.fixme.core.Core.*;
+import static com.lsandor.fixme.core.messenger.Messenger.sendMessage;
 import static com.lsandor.fixme.core.tags.FIX_tag.*;
 
 @RequiredArgsConstructor
@@ -30,12 +29,11 @@ public abstract class BaseMessageHandler extends AbstractMessageHandler {
 
     private void sendMessageWithStatus(AsynchronousSocketChannel clientChannel, String fixMessage, String message, Status status) {
         Map<FIX_tag, String> fixValueMap = getFixMapByTag(fixMessage);
-//        String targetName = Core.getFixValueFromMessageByTag(fixMessage, SOURCE_NAME); //TODO COULD BE ERROR
-        String targetName = fixValueMap.get(SOURCE_NAME); //TODO COULD BE ERROR
+        String targetid = fixValueMap.get(SOURCE_ID); //TODO COULD BE ERROR
         if (saveTransactionToDatabase()) {
             Database.insert(
                     name,
-                    targetName,
+                    targetid,
                     fixValueMap.get(TYPE),
                     fixValueMap.get(INSTRUMENT),
                     fixValueMap.get(PRICE),
@@ -44,10 +42,22 @@ public abstract class BaseMessageHandler extends AbstractMessageHandler {
                     message);
             Database.selectAll();
         }
-        Messenger.sendMessage(clientChannel, Core.resultFixMessage(message, id, name, targetName, status));
+        sendMessage(clientChannel, resultFixMessage(message, id, name, targetid, status));
     }
 
     protected boolean saveTransactionToDatabase() {
         return false;
+    }
+
+    private String resultFixMessage(String message, String id, String sourceName, String targetName, Status status) {
+        StringBuilder builder = new StringBuilder();
+        addPart(builder, SOURCE_ID, id);
+        addPart(builder, SOURCE_NAME, sourceName);
+        addPart(builder, TARGET_ID, targetName);
+        addPart(builder, STATUS, status.name());
+        addPart(builder, MESSAGE, message);
+        addPart(builder, CHECKSUM, calculateChecksumFromString(builder.toString()));
+
+        return builder.toString();
     }
 }
