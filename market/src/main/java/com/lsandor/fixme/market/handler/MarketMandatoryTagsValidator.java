@@ -40,6 +40,12 @@ public class MarketMandatoryTagsValidator extends BaseMessageHandler {
             isMessageValid = false;
         }
 
+        String marketNameStr = resultMap.get(TARGET_NAME);
+        if (isEmpty(marketNameStr) || !getName().equals(marketNameStr)) {
+            responseWithStatusRejected(channel, fixMessage, "Market name is wrong or missing: " + marketNameStr);
+            isMessageValid = false;
+        }
+
         String priceStr = resultMap.get(PRICE);
         if (isEmpty(priceStr)) {
             responseWithStatusRejected(channel, fixMessage, "Price is a mandatory field to fill");
@@ -70,7 +76,7 @@ public class MarketMandatoryTagsValidator extends BaseMessageHandler {
                 isMessageValid = false;
             }
 
-            int quantity = Integer.parseInt(quantityStr);
+            long quantity = Long.parseLong(quantityStr);
             if (quantity <= 0) {
                 responseWithStatusRejected(channel, fixMessage, "Quantity must be more than 0");
                 isMessageValid = false;

@@ -8,7 +8,7 @@ import com.lsandor.fixme.core.handler.impl.MessageChecksumValidator;
 import com.lsandor.fixme.core.handler.impl.SystemMessageHandler;
 import com.lsandor.fixme.core.model.Instrument;
 import com.lsandor.fixme.market.handler.MarketMandatoryTagsValidator;
-import com.lsandor.fixme.market.handler.MessageExecutor;
+import com.lsandor.fixme.market.handler.TransactionsExecutor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -46,8 +46,8 @@ public class Market extends Counterparty {
         MessageHandler messageHandler = new SystemMessageHandler();
         MessageHandler mandatoryTagsValidator = new MandatoryTagsValidator();
         MessageHandler checksumValidator = new MessageChecksumValidator();
-        MessageHandler marketTagsValidator = new MarketMandatoryTagsValidator(getId(), this.getName()); //TODO!!!
-        MessageHandler messageExecutor = new MessageExecutor(this.getId(), this.getName(), instruments);
+        MessageHandler marketTagsValidator = new MarketMandatoryTagsValidator(getId(), this.getName());
+        MessageHandler messageExecutor = new TransactionsExecutor(this.getId(), this.getName(), instruments);
 
         messageHandler.setNextHandler(mandatoryTagsValidator);
         mandatoryTagsValidator.setNextHandler(checksumValidator);

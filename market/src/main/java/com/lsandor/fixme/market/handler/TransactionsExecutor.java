@@ -13,11 +13,11 @@ import static com.lsandor.fixme.core.Core.getFixMapByTag;
 import static com.lsandor.fixme.core.tags.FIX_tag.*;
 
 @Slf4j
-public class MessageExecutor extends BaseMessageHandler {
+public class TransactionsExecutor extends BaseMessageHandler {
 
     private final Map<Instrument, Long> availableInstruments;
 
-    public MessageExecutor(String clientId, String name, Map<Instrument, Long> instruments) {
+    public TransactionsExecutor(String clientId, String name, Map<Instrument, Long> instruments) {
         super(clientId, name);
         this.availableInstruments = instruments;
     }

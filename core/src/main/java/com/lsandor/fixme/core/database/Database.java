@@ -26,8 +26,8 @@ public class Database {
         }
     }
 
-    public static void insert(String marketName, String brokerId, String brokerName, String operationType, String instrument,
-                              String price, String quantity, String result, String comment) {
+    public static void insertTransaction(String marketName, String brokerId, String brokerName, String operationType, String instrument,
+                                         String price, String quantity, String result, String comment) {
         try (PreparedStatement statement = connection.prepareStatement(INSERT_TRANSACTION)) {
             statement.setString(1, marketName);
             statement.setString(2, brokerId);
@@ -44,7 +44,7 @@ public class Database {
         }
     }
 
-    public static void selectAll() {
+    public static void getAllAndPrintResult() {
         try (Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery(SELECT_QUERY)) {
             printResultSet(resultSet);

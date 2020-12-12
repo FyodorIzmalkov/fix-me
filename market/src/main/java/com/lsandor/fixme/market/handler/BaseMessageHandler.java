@@ -4,6 +4,7 @@ import com.lsandor.fixme.core.database.Database;
 import com.lsandor.fixme.core.handler.AbstractMessageHandler;
 import com.lsandor.fixme.core.status.Status;
 import com.lsandor.fixme.core.tags.FIX_tag;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.nio.channels.AsynchronousSocketChannel;
@@ -17,6 +18,7 @@ import static com.lsandor.fixme.core.tags.FIX_tag.*;
 public abstract class BaseMessageHandler extends AbstractMessageHandler {
 
     private final String id;
+    @Getter
     private final String name;
 
     protected void responseWithStatusRejected(AsynchronousSocketChannel clientChannel, String fixMessage, String message) {
@@ -29,12 +31,12 @@ public abstract class BaseMessageHandler extends AbstractMessageHandler {
 
     private void sendMessageWithStatus(AsynchronousSocketChannel clientChannel, String fixMessage, String message, Status status) {
         Map<FIX_tag, String> fixValueMap = getFixMapByTag(fixMessage);
-        String targetid = fixValueMap.get(SOURCE_ID);
+        String targetId = fixValueMap.get(SOURCE_ID);
         String targetName = fixValueMap.get(SOURCE_NAME);
         if (saveTransactionToDatabase()) {
-            Database.insert(
+            Database.insertTransaction(
                     name,
-                    targetid,
+                    targetId,
                     targetName,
                     fixValueMap.get(TYPE),
                     fixValueMap.get(INSTRUMENT),
@@ -42,9 +44,9 @@ public abstract class BaseMessageHandler extends AbstractMessageHandler {
                     fixValueMap.get(QUANTITY),
                     status.toString(),
                     message);
-            Database.selectAll();
+            Database.getAllAndPrintResult();
         }
-        sendMessage(clientChannel, resultFixMessage(message, targetid, targetName, status));
+        sendMessage(clientChannel, resultFixMessage(message, targetId, targetName, status));
     }
 
     protected boolean saveTransactionToDatabase() {
