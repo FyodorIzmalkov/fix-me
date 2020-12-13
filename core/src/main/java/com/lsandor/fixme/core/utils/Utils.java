@@ -1,9 +1,5 @@
 package com.lsandor.fixme.core.utils;
 
-import com.lsandor.fixme.core.handler.MessageHandler;
-import com.lsandor.fixme.core.handler.impl.MandatoryTagsValidator;
-import com.lsandor.fixme.core.handler.impl.MessageChecksumValidator;
-import com.lsandor.fixme.core.handler.impl.SystemMessageHandler;
 import com.lsandor.fixme.core.model.Instrument;
 
 import java.time.LocalDateTime;
