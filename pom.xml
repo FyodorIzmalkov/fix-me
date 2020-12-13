@@ -10,6 +10,8 @@
 
     <properties>
         <maven.assembly.plugin.version>3.3.0</maven.assembly.plugin.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <assembly.attach>false</assembly.attach>
     </properties>
 
     <modules>
