@@ -18,11 +18,16 @@ public class MandatoryTagsValidator extends AbstractMessageHandler {
         try {
             String sourceId = getFixValueFromMessageByTag(message, SOURCE_ID);
             getFixValueFromMessageByTag(message, SOURCE_NAME);
-            getFixValueFromMessageByTag(message, TARGET_ID);
+            String targetId = getFixValueFromMessageByTag(message, TARGET_ID);
             String checksum = getFixValueFromMessageByTag(message, CHECKSUM);
 
             if (isEmpty(sourceId) || !isParsableToInt(sourceId)) {
-                sendSystemMessage(channel, "SOURCE_ID tag value must be number: " + message);
+                sendSystemMessage(channel, "SOURCE_ID tag value must be a number: " + message);
+                return;
+            }
+
+            if (isEmpty(targetId) || !isParsableToInt(targetId)) {
+                sendSystemMessage(channel, "TARGET_ID tag value must be a number: " + message);
                 return;
             }
 
