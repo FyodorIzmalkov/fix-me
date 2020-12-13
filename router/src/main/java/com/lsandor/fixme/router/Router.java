@@ -15,8 +15,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -28,7 +28,7 @@ public class Router {
 
     private static final long DELAY_BETWEEN_RESENDING_MESSAGES = 10L;
     private final RouterMap routerMap = new RouterMap();
-    private final Map<String, Set<String>> failedMessages = new ConcurrentHashMap<>();
+    private final Map<String, List<String>> failedMessages = new ConcurrentHashMap<>();
     private final AtomicInteger id = new AtomicInteger(1);
     private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
     private final BlockingQueue<MessageToSend> messagesQueue = new ArrayBlockingQueue<>(DEFAULT_QUEUE_CAPACITY);
@@ -64,9 +64,11 @@ public class Router {
             AsynchronousSocketChannel channel = routerMap.tryToGetChannel(targetName);
             if (channel != null && channel.isOpen()) {
                 log.info("Sending message to {}", targetName);
-                Set<String> messagesSet = failedMessages.get(targetName);
-                messagesSet.forEach(msg -> sendMessage(channel, msg));
-                return true;
+                List<String> messagesList = failedMessages.get(targetName);
+                String message = messagesList.remove(0);
+                sendMessage(channel, message);
+
+                return messagesList.isEmpty();
             }
             return false;
         });

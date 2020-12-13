@@ -7,9 +7,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.channels.AsynchronousSocketChannel;
-import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 
 import static com.lsandor.fixme.core.Core.getFixValueFromMessageByTag;
@@ -22,7 +22,7 @@ import static com.lsandor.fixme.core.tags.FIX_tag.TARGET_NAME;
 public class MessageRouter extends AbstractMessageHandler {
 
     private final RouterMap routerMap;
-    private final Map<String, Set<String>> failedMessages;
+    private final Map<String, List<String>> failedMessages;
     private final BlockingQueue<MessageToSend> messagesQueue;
 
     @Override
@@ -46,7 +46,7 @@ public class MessageRouter extends AbstractMessageHandler {
         } else {
             sendSystemMessage(channel, "No client found with id: " + targetId + " and name: " + targetName + " we will try to resend message later.");
             log.info("Current routingMap: {}", routerMap.toString());
-            failedMessages.computeIfAbsent(targetName, (key) -> new HashSet<>()).add(message);
+            failedMessages.computeIfAbsent(targetName, (key) -> new LinkedList<>()).add(message);
         }
     }
 }
